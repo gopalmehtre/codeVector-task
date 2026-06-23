@@ -14,6 +14,7 @@ duplicates or gaps even while new products are being added.
   (one SELECT, one bulk INSERT). An ORM would add indirection without buying
   anything here, and it's easier to reason about exactly what SQL is being sent.
 - **`@faker-js/faker`** for seed data.
+- **Architecture** — Clean separation of concerns with isolated routes (`routes/`) and business logic (`controllers/`).
 
 ## Why keyset (cursor) pagination instead of `OFFSET`
 
@@ -131,9 +132,12 @@ dropdown without hardcoding it.
 
 ## Running locally
 
+A `docker-compose.yml` is included to spin up a local PostgreSQL database without polluting your machine.
+
 ```bash
 npm install
-cp .env.example .env        # set DATABASE_URL to your Postgres connection string
+docker-compose up -d        # starts Postgres on localhost:5433
+cp .env.example .env        # defaults to the Docker DB, no edits needed
 npm run migrate             # creates the table + indexes
 npm run seed                # inserts 200,000 products (~7-8s)
 npm start                   # serves the API + UI on :3000
@@ -154,18 +158,22 @@ their `created_at`, to simulate real edits and exercise the pagination logic
 properly rather than testing against data where the two columns are always
 identical.
 
-## Deploying (free tier, no card required)
+## Deploying on Render
 
-1. **Database — Neon**: create a project, copy the pooled connection string.
-2. Push this repo to GitHub.
-3. **Backend — Render**: New Web Service → connect the repo → Build command
-   `npm install` → Start command `npm start` → add env var `DATABASE_URL`
-   (from Neon).
-4. Run the one-time setup against the deployed database (locally, pointing
-   `DATABASE_URL` at the Neon connection string):
+This project is configured to be easily hosted as a Web Service on Render.
+
+1. Push this repository to GitHub.
+2. On Render, create a new **Web Service** and connect your repo.
+3. Configuration:
+   - **Build Command:** `npm install`
+   - **Start Command:** `npm start`
+4. Add the **Environment Variable**:
+   - Key: `DATABASE_URL`
+   - Value: `<your-postgres-connection-string>?sslmode=require` (The `?sslmode=require` flag is mandatory for connecting to managed DBs like Render's Postgres).
+5. Run the one-time setup against your deployed database locally before starting the server:
    ```bash
-   DATABASE_URL="<neon-url>" npm run migrate
-   DATABASE_URL="<neon-url>" npm run seed
+   DATABASE_URL="<render-db-url>?sslmode=require" npm run migrate
+   DATABASE_URL="<render-db-url>?sslmode=require" npm run seed
    ```
 
 ## What I'd improve with more time
